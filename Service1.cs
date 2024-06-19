@@ -38,8 +38,8 @@ namespace ResetService
         protected override void OnStart(string[] args)
         {
             Log("Service is starting.");
-            closeTime = "19:05"; // Example close time
-            openTime = "19:10"; // Example open time
+            closeTime = "19:35";
+            openTime = "19:40";
             SetupTimer();
         }
 
@@ -54,8 +54,8 @@ namespace ResetService
             try
             {
                 var now = DateTime.Now;
-                var closeDateTime = DateTime.ParseExact(closeTime, "HH:mm", null);
-                var openDateTime = DateTime.ParseExact(openTime, "HH:mm", null);
+                var closeDateTime = DateTime.Today.Add(DateTime.ParseExact(closeTime, "HH:mm", null).TimeOfDay);
+                var openDateTime = DateTime.Today.Add(DateTime.ParseExact(openTime, "HH:mm", null).TimeOfDay);
 
                 if (openDateTime < closeDateTime)
                 {
@@ -112,8 +112,8 @@ namespace ResetService
         private void ManageProcess(string processName, string processPath)
         {
             var now = DateTime.Now;
-            var closeDateTime = DateTime.ParseExact(closeTime, "HH:mm", null);
-            var openDateTime = DateTime.ParseExact(openTime, "HH:mm", null);
+            var closeDateTime = DateTime.Today.Add(DateTime.ParseExact(closeTime, "HH:mm", null).TimeOfDay);
+            var openDateTime = DateTime.Today.Add(DateTime.ParseExact(openTime, "HH:mm", null).TimeOfDay);
 
             if (openDateTime < closeDateTime)
             {
@@ -125,15 +125,17 @@ namespace ResetService
                 RunCommand($"taskkill /IM \"{processName}.exe\" /F");
                 Log($"Closed {processName} at {now}");
             }
-            else if (now >= openDateTime)
+            else if (now.TimeOfDay >= openDateTime.TimeOfDay && now.TimeOfDay < openDateTime.AddMinutes(1).TimeOfDay)
             {
                 if (!IsProcessRunning(processName))
                 {
-                    RunCommand($"start \"{processName}.appref-ms\" \"{processPath}\"");
+                    //RunCommand($"start \"{processName}.appref-ms\" \"{processPath}\"");
+                    RunCommand($"start \"{processPath}\"");
                     Log($"Started {processName} at {now}");
                 }
             }
         }
+
         private bool IsProcessRunning(string processName)
         {
             return Process.GetProcessesByName(processName).Length > 0;
@@ -160,10 +162,8 @@ namespace ResetService
 
         private void Log(string message)
         {
-            // Log to Event Log
             eventLog.WriteEntry(message);
 
-            // Append message to log file
             try
             {
                 using (StreamWriter writer = new StreamWriter(logFilePath, true))
@@ -178,3 +178,4 @@ namespace ResetService
         }
     }
 }
+
